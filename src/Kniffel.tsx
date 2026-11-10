@@ -3,9 +3,9 @@ import {
   FELD_HINWEIS, FELD_NAME, OBERER_BLOCK, UNTERER_BLOCK, freieFelder, moeglicheWerte, punkteFuer, summen,
   type Feld,
 } from './kniffel';
+import { Wuerfel, SPIELERFARBEN } from './Wuerfel';
 import { eintragen, laden, neuesSpiel, rangliste, rueckgaengig, speichern, spielZuEnde, type Spiel } from './spiel';
 
-const AUGEN = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
 export function Kniffel({ zurueck }: { zurueck: () => void }) {
   const [spiel, setSpiel] = useState<Spiel | null>(() => laden());
@@ -65,10 +65,10 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
           onClick={() => { if (confirm('Spiel beenden und neu beginnen? Der Stand geht verloren.')) neu(); }}>⟲</button>
       </Leiste>
 
-      <section className="karte dran">
-        <span className="neben">Dran ist</span>
-        <strong>{aktuell.name}</strong>
-        <span className="punkte">{summen(aktuell.blatt).gesamt} Punkte</span>
+      <section className="karte dran" style={{ ['--farbe' as string]: SPIELERFARBEN[spiel.dran % 6] }}>
+        <span className="avatar">{aktuell.name.slice(0, 1).toUpperCase()}</span>
+        <span className="wer"><small>Dran ist</small><strong>{aktuell.name}</strong></span>
+        <span className="runde"><small>Runde {Math.min(13, Object.keys(aktuell.blatt).length + 1)}/13</small><b>{summen(aktuell.blatt).gesamt} Punkte</b></span>
       </section>
 
       <section className="karte">
@@ -77,14 +77,14 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
           {[0, 1, 2, 3, 4].map(i => (
             <button key={i} className={'wuerfel' + (wurf[i] ? ' voll' : '')} disabled={!wurf[i]}
               onClick={() => setWurf(wurf.filter((_, k) => k !== i))} aria-label={wurf[i] ? `Würfel ${wurf[i]} entfernen` : 'leer'}>
-              {wurf[i] ? AUGEN[wurf[i]] : ''}
+              {wurf[i] ? <Wuerfel n={wurf[i]} /> : ''}
             </button>
           ))}
         </div>
         <div className="tasten">
           {[1, 2, 3, 4, 5, 6].map(z => (
             <button key={z} className="taste" disabled={wurfKomplett} onClick={() => setWurf([...wurf, z])}>
-              <span aria-hidden>{AUGEN[z]}</span><small>{z}</small>
+              <Wuerfel n={z} klein /><small>{z}</small>
             </button>
           ))}
         </div>
@@ -142,7 +142,7 @@ function Block({ spiel, waehle }: { spiel: Spiel; waehle: (spieler: number, feld
       <h2>Punkteblock</h2>
       <div className="scroll">
         <table>
-          <thead><tr><th />{spiel.spieler.map((s, i) => <th key={i} className={i === spiel.dran ? 'aktiv' : ''}>{s.name}</th>)}</tr></thead>
+          <thead><tr><th />{spiel.spieler.map((s, i) => <th key={i} className={i === spiel.dran ? 'aktiv' : ''} style={{ borderBottom: `3px solid ${SPIELERFARBEN[i % 6]}` }}>{s.name}</th>)}</tr></thead>
           <tbody>
             {OBERER_BLOCK.map(zeile)}
             {summe('Oben', i => alle[i].oben)}
@@ -202,11 +202,13 @@ function Ende({ spiel, zurueck, neu, zuruecknehmen }: { spiel: Spiel; zurueck: (
     <main className="seite">
       <Leiste titel="Kniffel" zurueck={zurueck} />
       <section className="karte">
-        <h2>🏆 Spiel zu Ende</h2>
+        <div className="pokal" aria-hidden>🏆</div>
+        <h2 className="mitte">Spiel zu Ende</h2>
+        <p className="neben mitte">{liste[0] && `${liste.filter(e => e.platz === 1).map(e => e.name).join(' & ')} gewinn${liste.filter(e => e.platz === 1).length > 1 ? 'en' : 't'} mit ${liste[0].punkte} Punkten`}</p>
         <ol className="rang">
           {liste.map((e, i) => (
             <li key={i} className={e.platz === 1 ? 'sieger' : ''}>
-              <span>{e.platz}.</span><strong>{e.name}</strong><span>{e.punkte}</span>
+              <span className="medaille">{['🥇', '🥈', '🥉'][e.platz - 1] ?? `${e.platz}.`}</span><strong>{e.name}</strong><span>{e.punkte}</span>
             </li>
           ))}
         </ol>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Kniffel } from './Kniffel';
 import { laden } from './spiel';
+import { Wuerfel } from './Wuerfel';
 
 type Ansicht = 'start' | 'kniffel';
 
@@ -12,13 +13,17 @@ export function App() {
   if (ansicht === 'kniffel') return <Kniffel zurueck={() => setAnsicht('start')} />;
   return (
     <main className="seite">
-      <header className="kopf">
-        <div className="logo" aria-hidden>⚄</div>
+      <header className="held">
+        <div className="schwebend" aria-hidden>
+          <span className="w1"><Wuerfel n={5} gold /></span>
+          <span className="w2"><Wuerfel n={3} /></span>
+          <span className="w3"><Wuerfel n={6} /></span>
+        </div>
         <h1>Würfelspiele</h1>
-        <p className="neben">Dein Punkteblock für unterwegs – funktioniert auch ohne Netz.</p>
+        <p>Dein Punkteblock für unterwegs – auch ohne Netz.</p>
       </header>
       <button className="karte spielkarte" onClick={() => setAnsicht('kniffel')}>
-        <span className="spielicon" aria-hidden>🎲</span>
+        <span className="spielicon" aria-hidden><Wuerfel n={5} klein gold /></span>
         <span>
           <strong>Kniffel</strong>
           <small>{laeuft ? 'Spiel läuft – weitermachen' : 'Neues Spiel starten'}</small>
