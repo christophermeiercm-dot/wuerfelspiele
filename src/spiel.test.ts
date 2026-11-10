@@ -31,3 +31,14 @@ describe('Spielablauf', () => {
     expect(neuesSpiel(['', ' Zoe ']).spieler.map(s => s.name)).toEqual(['Spieler 1', 'Zoe']);
   });
 });
+
+describe('Spielablauf – weiterer Yahtzee', () => {
+  it('Prämie wird gezählt und mit Rückgängig wieder abgezogen', () => {
+    let s = neuesSpiel(['A', 'B'], 'yahtzee');
+    s = eintragen(s, 0, 'kniffel', 50);
+    s = eintragen(s, 1, 'chance', 20);
+    s = eintragen(s, 0, 'vierer', 20, true);
+    expect(s.spieler[0].zusatz).toBe(1);
+    expect(rueckgaengig(s).spieler[0].zusatz).toBe(0);
+  });
+});

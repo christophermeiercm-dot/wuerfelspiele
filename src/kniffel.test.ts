@@ -59,3 +59,45 @@ describe('Kniffel – Summen', () => {
     expect(moeglicheWerte('chance')).toBe('frei');
   });
 });
+
+import { erlaubteFelder } from './kniffel';
+
+describe('Yahtzee – weiterer Yahtzee und Joker-Regel', () => {
+  const y = [4, 4, 4, 4, 4];
+  it('ohne belegtes Yahtzee-Feld oder bei Kniffel-Regeln gilt der normale Wurf', () => {
+    expect(erlaubteFelder(y, {}, 'yahtzee').joker).toBe(false);
+    expect(erlaubteFelder(y, { kniffel: 50 }, 'kniffel').joker).toBe(false);
+    expect(erlaubteFelder([1, 2, 3, 4, 6], { kniffel: 50 }, 'yahtzee').joker).toBe(false);
+  });
+
+  it('1. Pflicht: das passende obere Feld, wenn frei – mit Prämie bei 50', () => {
+    const e = erlaubteFelder(y, { kniffel: 50 }, 'yahtzee');
+    expect(e).toEqual({ felder: { vierer: 20 }, zusatz: true, joker: true });
+  });
+
+  it('2. Oberes Feld belegt: freie untere Felder, Full House/Straßen voll', () => {
+    const e = erlaubteFelder(y, { kniffel: 50, vierer: 12 }, 'yahtzee');
+    expect(e.felder.fullhouse).toBe(25);
+    expect(e.felder.kleineStrasse).toBe(30);
+    expect(e.felder.grosseStrasse).toBe(40);
+    expect(e.felder.dreierpasch).toBe(20);
+    expect(e.felder.chance).toBe(20);
+    expect(e.felder.einser).toBeUndefined(); // oben ist nicht erlaubt, solange unten etwas frei ist
+    expect(e.felder.kniffel).toBeUndefined();
+  });
+
+  it('3. Unten alles voll: nur oben, dort 0', () => {
+    const unten = { dreierpasch: 1, viererpasch: 1, fullhouse: 1, kleineStrasse: 1, grosseStrasse: 1, kniffel: 50, chance: 1, vierer: 8 };
+    expect(erlaubteFelder(y, unten, 'yahtzee').felder).toEqual({ einser: 0, zweier: 0, dreier: 0, fuenfer: 0, sechser: 0 });
+  });
+
+  it('bei gestrichenem Yahtzee-Feld (0): Joker ja, Prämie nein', () => {
+    const e = erlaubteFelder(y, { kniffel: 0 }, 'yahtzee');
+    expect(e.joker).toBe(true);
+    expect(e.zusatz).toBe(false);
+  });
+
+  it('Summe enthält 100 je weiterem Yahtzee', () => {
+    expect(summen({ kniffel: 50 }, 2)).toMatchObject({ zusatz: 200, gesamt: 250 });
+  });
+});

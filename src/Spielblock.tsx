@@ -1,25 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  FELD_HINWEIS, FELD_NAME, OBERER_BLOCK, UNTERER_BLOCK, freieFelder, moeglicheWerte, punkteFuer, summen,
-  type Feld,
+  FELD_HINWEIS, OBERER_BLOCK, UNTERER_BLOCK, VARIANTEN, erlaubteFelder, feldName, freieFelder, moeglicheWerte, summen,
+  type Feld, type Variante,
 } from './kniffel';
 import { Wuerfel, SPIELERFARBEN } from './Wuerfel';
+import { RegelnKnopf } from './RegelnKnopf';
 import { eintragen, laden, neuesSpiel, rangliste, rueckgaengig, speichern, spielZuEnde, type Spiel } from './spiel';
 
 
-export function Kniffel({ zurueck }: { zurueck: () => void }) {
-  const [spiel, setSpiel] = useState<Spiel | null>(() => laden());
-  useEffect(() => speichern(spiel), [spiel]);
+export function Spielblock({ variante, zurueck }: { variante: Variante; zurueck: () => void }) {
+  const [spiel, setSpiel] = useState<Spiel | null>(() => laden(variante));
+  useEffect(() => speichern(variante, spiel), [variante, spiel]);
 
-  if (!spiel) return <Einrichtung zurueck={zurueck} start={namen => setSpiel(neuesSpiel(namen))} />;
+  if (!spiel) return <Einrichtung variante={variante} zurueck={zurueck} start={namen => setSpiel(neuesSpiel(namen, variante))} />;
   return <Partie spiel={spiel} setSpiel={setSpiel} zurueck={zurueck} neu={() => setSpiel(null)} />;
 }
 
-function Einrichtung({ zurueck, start }: { zurueck: () => void; start: (namen: string[]) => void }) {
+function Einrichtung({ variante, zurueck, start }: { variante: Variante; zurueck: () => void; start: (namen: string[]) => void }) {
   const [namen, setNamen] = useState(['', '']);
   return (
     <main className="seite">
-      <Leiste titel="Kniffel" zurueck={zurueck} />
+      <Leiste titel={VARIANTEN[variante].titel} zurueck={zurueck}><RegelnKnopf variante={variante} symbol /></Leiste>
       <section className="karte">
         <h2>Wer spielt mit?</h2>
         {namen.map((n, i) => (
@@ -34,6 +35,7 @@ function Einrichtung({ zurueck, start }: { zurueck: () => void; start: (namen: s
           {namen.length > 1 && <button className="knopf zweit" onClick={() => setNamen(namen.slice(0, -1))}>− Letzter</button>}
         </div>
         <button className="knopf haupt" onClick={() => start(namen)}>Spiel starten →</button>
+        <div className="zeile"><RegelnKnopf variante={variante} /></div>
       </section>
     </main>
   );
@@ -48,8 +50,11 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
   const fertig = spielZuEnde(spiel);
   const wurfKomplett = wurf.length === 5;
 
-  const setze = (spieler: number, feld: Feld, wert: number | undefined) => {
-    setSpiel(eintragen(spiel, spieler, feld, wert));
+  const variante = spiel.variante;
+  const erlaubt = wurfKomplett ? erlaubteFelder(wurf, aktuell.blatt, variante) : null;
+
+  const setze = (spieler: number, feld: Feld, wert: number | undefined, zusatz = false) => {
+    setSpiel(eintragen(spiel, spieler, feld, wert, zusatz));
     setWurf([]);
     setDialog(null);
   };
@@ -58,7 +63,8 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
 
   return (
     <main className="seite">
-      <Leiste titel="Kniffel" zurueck={zurueck}>
+      <Leiste titel={VARIANTEN[variante].titel} zurueck={zurueck}>
+        <RegelnKnopf variante={variante} symbol />
         <button className="icon" disabled={!spiel.verlauf.length} onClick={() => { setWurf([]); setSpiel(rueckgaengig(spiel)); }}
           aria-label="Letzten Eintrag rückgängig">↶</button>
         <button className="icon" aria-label="Neues Spiel"
@@ -68,7 +74,7 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
       <section className="karte dran" style={{ ['--farbe' as string]: SPIELERFARBEN[spiel.dran % 6] }}>
         <span className="avatar">{aktuell.name.slice(0, 1).toUpperCase()}</span>
         <span className="wer"><small>Dran ist</small><strong>{aktuell.name}</strong></span>
-        <span className="runde"><small>Runde {Math.min(13, Object.keys(aktuell.blatt).length + 1)}/13</small><b>{summen(aktuell.blatt).gesamt} Punkte</b></span>
+        <span className="runde"><small>Runde {Math.min(13, Object.keys(aktuell.blatt).length + 1)}/13</small><b>{summen(aktuell.blatt, aktuell.zusatz).gesamt} Punkte</b></span>
       </section>
 
       <section className="karte">
@@ -97,15 +103,22 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
       <section className="karte">
         <h2>{wurfKomplett ? 'Wohin damit?' : 'Feld wählen'}</h2>
         {!wurfKomplett && <p className="neben">Tippe die fünf Würfel oben ein – dann siehst du, was jedes Feld bringt. Oder tippe ein Feld und gib die Punkte direkt ein.</p>}
+        {erlaubt?.joker && (
+          <p className="joker">
+            {erlaubt.zusatz ? '🎉 Weiterer Yahtzee! +100 Punkte Prämie. ' : 'Weiterer Yahtzee – ohne Prämie, da das Yahtzee-Feld nicht 50 zeigt. '}
+            Joker-Regel: Es sind nur diese Felder erlaubt.
+          </p>
+        )}
         <ul className="felder">
           {freieFelder(aktuell.blatt).map(f => {
-            const p = wurfKomplett ? punkteFuer(f, wurf) : null;
+            const p = erlaubt ? (erlaubt.felder[f] ?? null) : null;
+            const gesperrt = !!erlaubt && p === null;
             return (
               <li key={f}>
-                <button className={'fe' + (p === 0 ? ' null' : p ? ' gut' : '')}
-                  onClick={() => (p === null ? setDialog({ spieler: spiel.dran, feld: f }) : setze(spiel.dran, f, p))}>
-                  <span><strong>{FELD_NAME[f]}</strong><small>{FELD_HINWEIS[f]}</small></span>
-                  <span className="wert">{p === null ? '' : p === 0 ? '0 · streichen' : `+${p}`}</span>
+                <button className={'fe' + (gesperrt ? ' gesperrt' : p === 0 ? ' null' : p ? ' gut' : '')} disabled={gesperrt}
+                  onClick={() => (!erlaubt ? setDialog({ spieler: spiel.dran, feld: f }) : setze(spiel.dran, f, p ?? 0, erlaubt.zusatz))}>
+                  <span><strong>{feldName(f, variante)}</strong><small>{FELD_HINWEIS[f]}</small></span>
+                  <span className="wert">{gesperrt ? 'nicht erlaubt' : p === null ? '' : p === 0 ? '0 · streichen' : `+${p}`}</span>
                 </button>
               </li>
             );
@@ -120,13 +133,14 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
 }
 
 function Block({ spiel, waehle }: { spiel: Spiel; waehle: (spieler: number, feld: Feld) => void }) {
-  const alle = useMemo(() => spiel.spieler.map(s => summen(s.blatt)), [spiel]);
+  const alle = useMemo(() => spiel.spieler.map(s => summen(s.blatt, s.zusatz)), [spiel]);
+  const hatZusatz = spiel.spieler.some(s => s.zusatz > 0);
   const zeile = (f: Feld) => (
     <tr key={f}>
-      <th scope="row">{FELD_NAME[f]}</th>
+      <th scope="row">{feldName(f, spiel.variante)}</th>
       {spiel.spieler.map((s, i) => (
         <td key={i} className={i === spiel.dran ? 'aktiv' : ''}>
-          <button onClick={() => waehle(i, f)} aria-label={`${FELD_NAME[f]} ${s.name}`}>{s.blatt[f] ?? ''}</button>
+          <button onClick={() => waehle(i, f)} aria-label={`${feldName(f, spiel.variante)} ${s.name}`}>{s.blatt[f] ?? ''}</button>
         </td>
       ))}
     </tr>
@@ -148,6 +162,7 @@ function Block({ spiel, waehle }: { spiel: Spiel; waehle: (spieler: number, feld
             {summe('Oben', i => alle[i].oben)}
             {summe('Bonus (ab 63)', i => alle[i].bonus || (alle[i].bisBonus ? `noch ${alle[i].bisBonus}` : 0))}
             {UNTERER_BLOCK.map(zeile)}
+            {hatZusatz && summe('Weitere Yahtzee', i => alle[i].zusatz)}
             {summe('Gesamt', i => alle[i].gesamt, true)}
           </tbody>
         </table>
@@ -159,34 +174,41 @@ function Block({ spiel, waehle }: { spiel: Spiel; waehle: (spieler: number, feld
 
 function Eingabe({ spiel, spieler, feld, zu, setze }: {
   spiel: Spiel; spieler: number; feld: Feld; zu: () => void;
-  setze: (spieler: number, feld: Feld, wert: number | undefined) => void;
+  setze: (spieler: number, feld: Feld, wert: number | undefined, zusatz?: boolean) => void;
 }) {
   const aktuell = spiel.spieler[spieler].blatt[feld];
   const werte = moeglicheWerte(feld);
   const [text, setText] = useState(aktuell === undefined ? '' : String(aktuell));
   const zahl = text.trim() === '' ? NaN : Number(text);
+  const [zusatz, setZusatz] = useState(false);
+  const zusatzMoeglich = spiel.variante === 'yahtzee' && aktuell === undefined && spiel.spieler[spieler].blatt.kniffel === 50;
+  const eintrag = (w: number | undefined) => setze(spieler, feld, w, zusatz && w !== undefined);
   return (
     <div className="schleier" onClick={zu}>
       <div className="blatt" role="dialog" aria-modal onClick={e => e.stopPropagation()}>
-        <h2>{FELD_NAME[feld]} · {spiel.spieler[spieler].name}</h2>
+        <h2>{feldName(feld, spiel.variante)} · {spiel.spieler[spieler].name}</h2>
         <p className="neben">{FELD_HINWEIS[feld]}</p>
         {werte === 'frei' ? (
           <div className="zeile">
             <input inputMode="numeric" autoFocus value={text} placeholder="Summe der Augen"
               onChange={e => setText(e.target.value.replace(/\D/g, '').slice(0, 2))} />
             <button className="knopf haupt" disabled={!(zahl >= 5 && zahl <= 30) && zahl !== 0}
-              onClick={() => setze(spieler, feld, zahl)}>Eintragen</button>
+              onClick={() => eintrag(zahl)}>Eintragen</button>
           </div>
         ) : (
           <div className="werte">
             {werte.map(w => (
-              <button key={w} className={'knopf zweit' + (w === aktuell ? ' gewaehlt' : '')} onClick={() => setze(spieler, feld, w)}>
+              <button key={w} className={'knopf zweit' + (w === aktuell ? ' gewaehlt' : '')} onClick={() => eintrag(w)}>
                 {w === 0 ? '0 · streichen' : w}
               </button>
             ))}
           </div>
         )}
-        {werte === 'frei' && <button className="knopf zweit" onClick={() => setze(spieler, feld, 0)}>0 · streichen</button>}
+        {zusatzMoeglich && (
+          <label className="haken"><input type="checkbox" checked={zusatz} onChange={e => setZusatz(e.target.checked)} />
+            Weiterer Yahtzee (+100 Prämie, Joker-Regel)</label>
+        )}
+        {werte === 'frei' && <button className="knopf zweit" onClick={() => eintrag(0)}>0 · streichen</button>}
         <div className="zeile">
           {aktuell !== undefined && <button className="knopf zweit" onClick={() => setze(spieler, feld, undefined)}>Eintrag löschen</button>}
           <button className="knopf zweit" onClick={zu}>Abbrechen</button>
@@ -200,7 +222,7 @@ function Ende({ spiel, zurueck, neu, zuruecknehmen }: { spiel: Spiel; zurueck: (
   const liste = rangliste(spiel);
   return (
     <main className="seite">
-      <Leiste titel="Kniffel" zurueck={zurueck} />
+      <Leiste titel={VARIANTEN[spiel.variante].titel} zurueck={zurueck} />
       <section className="karte">
         <div className="pokal" aria-hidden>🏆</div>
         <h2 className="mitte">Spiel zu Ende</h2>

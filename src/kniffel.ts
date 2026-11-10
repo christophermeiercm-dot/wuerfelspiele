@@ -1,4 +1,14 @@
-/** Kniffel-Regeln: reine Funktionen, keine Oberfläche. */
+/** Kniffel- und Yahtzee-Regeln: reine Funktionen, keine Oberfläche. */
+
+export type Variante = 'kniffel' | 'yahtzee';
+
+export const VARIANTEN: Record<Variante, { titel: string; kniffelName: string }> = {
+  kniffel: { titel: 'Kniffel', kniffelName: 'Kniffel' },
+  yahtzee: { titel: 'Yahtzee', kniffelName: 'Yahtzee' },
+};
+
+/** Prämie je weiterem Yahtzee (nur Yahtzee-Regeln, nur wenn das Yahtzee-Feld 50 zeigt). */
+export const ZUSATZ_BONUS = 100;
 
 export type Feld =
   | 'einser' | 'zweier' | 'dreier' | 'vierer' | 'fuenfer' | 'sechser'
@@ -15,6 +25,8 @@ export const FELD_NAME: Record<Feld, string> = {
   dreierpasch: 'Dreierpasch', viererpasch: 'Viererpasch', fullhouse: 'Full House',
   kleineStrasse: 'Kleine Straße', grosseStrasse: 'Große Straße', kniffel: 'Kniffel', chance: 'Chance',
 };
+
+export const feldName = (feld: Feld, v: Variante): string => (feld === 'kniffel' ? VARIANTEN[v].kniffelName : FELD_NAME[feld]);
 
 export const FELD_HINWEIS: Record<Feld, string> = {
   einser: 'Nur Einser zählen', zweier: 'Nur Zweier zählen', dreier: 'Nur Dreier zählen',
@@ -76,17 +88,55 @@ export interface Summen {
   oben: number;
   bonus: number;
   unten: number;
+  /** Punkte aus weiteren Yahtzee (100 je Stück). */
+  zusatz: number;
   gesamt: number;
   /** Noch so viele Punkte im oberen Block bis zum Bonus (0 = erreicht). */
   bisBonus: number;
 }
 
-export function summen(blatt: Blatt): Summen {
+export function summen(blatt: Blatt, zusatzAnzahl = 0): Summen {
   const oben = OBERER_BLOCK.reduce((s, f) => s + (blatt[f] ?? 0), 0);
   const unten = UNTERER_BLOCK.reduce((s, f) => s + (blatt[f] ?? 0), 0);
   const bonus = oben >= BONUS_AB ? BONUS_PUNKTE : 0;
-  return { oben, bonus, unten, gesamt: oben + bonus + unten, bisBonus: Math.max(0, BONUS_AB - oben) };
+  const zusatz = zusatzAnzahl * ZUSATZ_BONUS;
+  return { oben, bonus, unten, zusatz, gesamt: oben + bonus + unten + zusatz, bisBonus: Math.max(0, BONUS_AB - oben) };
 }
 
 export const freieFelder = (blatt: Blatt): Feld[] => ALLE_FELDER.filter(f => blatt[f] === undefined);
 export const istFertig = (blatt: Blatt): boolean => freieFelder(blatt).length === 0;
+
+export const istFuenferPasch = (w: Wurf): boolean => w.length === 5 && w.every(a => a === w[0]);
+
+/** Wie viel ein weiterer Yahtzee zählt und wo er stehen darf. `zusatz` = Prämie fällig. */
+export interface Erlaubt { felder: Partial<Record<Feld, number>>; zusatz: boolean; joker: boolean }
+
+/**
+ * Freie Felder mit den Punkten, die der Wurf dort bringt.
+ * Kniffel: jedes freie Feld, wie gewürfelt.
+ * Yahtzee, Wurf = fünf Gleiche und das Yahtzee-Feld ist schon belegt (Joker-Regel):
+ *  1. Das passende obere Feld, wenn frei – nur dieses.
+ *  2. Sonst ein freies unteres Feld; Full House und Straßen zählen dann voll (25/30/40).
+ *  3. Sonst ein freies oberes Feld mit 0.
+ * Die 100-Punkte-Prämie gibt es nur, wenn im Yahtzee-Feld 50 steht (bei 0 gilt die Joker-Regel, aber keine Prämie).
+ */
+export function erlaubteFelder(wurf: Wurf, blatt: Blatt, variante: Variante): Erlaubt {
+  const frei = freieFelder(blatt);
+  const normal = () => Object.fromEntries(frei.map(f => [f, punkteFuer(f, wurf)])) as Partial<Record<Feld, number>>;
+  if (variante !== 'yahtzee' || !istFuenferPasch(wurf) || blatt.kniffel === undefined) {
+    return { felder: normal(), zusatz: false, joker: false };
+  }
+  const zusatz = blatt.kniffel === 50;
+  const augen = wurf[0];
+  const oben = OBERER_BLOCK[augen - 1];
+  if (frei.includes(oben)) return { felder: { [oben]: augen * 5 }, zusatz, joker: true };
+  const untenFrei = UNTERER_BLOCK.filter(f => frei.includes(f));
+  if (untenFrei.length) {
+    const jokerWert: Partial<Record<Feld, number>> = { fullhouse: 25, kleineStrasse: 30, grosseStrasse: 40 };
+    return {
+      felder: Object.fromEntries(untenFrei.map(f => [f, jokerWert[f] ?? punkteFuer(f, wurf)])),
+      zusatz, joker: true,
+    };
+  }
+  return { felder: Object.fromEntries(frei.map(f => [f, 0])), zusatz, joker: true };
+}

@@ -17,10 +17,6 @@ h2 { font-size: 1.05rem; }
 .logo { font-size: 3.5rem; color: var(--gold); line-height: 1; }
 .karte { background: #fff; border: 1px solid var(--nebel); border-radius: 1.25rem; padding: 1rem; box-shadow: 0 6px 24px rgba(15,46,87,.08); }
 .hinweis { background: linear-gradient(135deg, #fff4d6, var(--warm)); border: 0; font-size: .9rem; }
-.spielkarte { display: flex; align-items: center; gap: 1rem; width: 100%; text-align: left; }
-.spielkarte strong { display: block; font-size: 1.2rem; }
-.spielkarte small { color: var(--grau); }
-.spielkarte > span:nth-child(2) { flex: 1; }
 .spielicon { font-size: 2rem; }
 .pfeil { color: var(--gold); font-size: 1.4rem; font-weight: 800; }
 
@@ -82,9 +78,16 @@ td button { width: 100%; min-width: 2.6rem; min-height: 2.2rem; border: 0; backg
 .w2 { left: calc(50% - 1.8rem); top: 0; transform: rotate(6deg); animation-delay: -1.3s !important; }
 .w3 { left: calc(50% + 1.1rem); top: 1.1rem; transform: rotate(16deg); animation-delay: -2.6s !important; }
 @keyframes schweb { 50% { translate: 0 -.55rem; } }
-.spielkarte { margin-top: -1.8rem; position: relative; border: 2px solid var(--gold); }
+.spielkarte { position: relative; border: 2px solid var(--gold); display: grid; gap: .6rem; }
+.spielkarte.erste { margin-top: -1.8rem; }
+.wahl { margin: .4rem .2rem -.3rem; font-size: .95rem; color: var(--grau); text-transform: uppercase; letter-spacing: .06em; }
+.spielwahl { display: flex; align-items: center; gap: 1rem; width: 100%; text-align: left; background: none; border: 0; padding: 0; }
+.spielwahl strong { display: block; font-size: 1.2rem; }
+.spielwahl small { color: var(--grau); }
+.spielwahl > span:nth-child(2) { flex: 1; }
+.spielkarte .knopf { padding: .55rem .9rem; font-size: .85rem; justify-self: start; }
 .spielkarte .spielicon { width: 3rem; }
-.spielkarte:active { transform: scale(.985); }
+.spielwahl:active { transform: scale(.985); }
 
 /* --- Dran-Banner --- */
 .dran { display: flex; align-items: center; gap: .8rem; color: #fff; border: 0;
@@ -115,3 +118,16 @@ td button { width: 100%; min-width: 2.6rem; min-height: 2.2rem; border: 0; backg
 .medaille { font-size: 1.4rem; }
 .rang li { align-items: center; }
 .rang strong { font-size: 1.05rem; }
+
+/* --- Regeln, Joker, gesperrte Felder --- */
+.blatt.lang { display: block; max-height: 88vh; overflow-y: auto; padding-top: 0; }
+.blattkopf { display: flex; justify-content: space-between; align-items: center; gap: .5rem; position: sticky; top: 0; z-index: 2; background: #fff; padding: 1rem 0 .5rem; }
+.blattkopf h2 { margin: 0; }
+.regeltext h3 { margin: 1rem 0 .3rem; font-size: .95rem; color: var(--blau); }
+.regeltext p, .regeltext li { color: var(--grau); font-size: .9rem; line-height: 1.45; margin: .2rem 0; }
+.regeltext ul { padding-left: 1.1rem; margin: .2rem 0; }
+.joker { background: #fff4d6; border: 1px solid var(--gold); border-radius: .9rem; padding: .6rem .8rem; font-size: .85rem; margin: .5rem 0; }
+.fe.gesperrt { opacity: .45; background: var(--ivory); }
+.fe.gesperrt .wert { font-size: .75rem; font-weight: 600; color: var(--grau); }
+.haken { display: flex; gap: .6rem; align-items: center; font-size: .9rem; }
+.haken input { width: auto; }
