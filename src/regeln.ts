@@ -117,3 +117,47 @@ export const REGELN_SCHOCKEN: RegelAbschnitt[] = [
     ],
   },
 ];
+
+export const REGELN_SCHACH: RegelAbschnitt[] = [
+  {
+    titel: 'So bedienst du das Brett',
+    liste: [
+      'Eigene Figur antippen: Die erlaubten Felder werden markiert. Dann das Zielfeld antippen.',
+      'Anderen Zug überlegt? Eine andere eigene Figur antippen oder dieselbe nochmal.',
+      'Bauer auf der letzten Reihe: Die App fragt, in welche Figur er sich verwandelt.',
+      'Die App kennt alle Regeln und lässt nur erlaubte Züge zu, auch Rochade und „en passant“.',
+      '↶ nimmt den letzten Zug zurück, ⇅ dreht das Brett für den Gegenüber.',
+    ],
+  },
+  {
+    titel: 'Ziel',
+    absaetze: ['Du setzt den gegnerischen König matt: Er steht im Schach und kann ihm nicht mehr entkommen. Weiß beginnt, dann ziehen beide abwechselnd.'],
+  },
+  {
+    titel: 'Wie die Figuren ziehen',
+    liste: [
+      'König: ein Feld in jede Richtung.',
+      'Dame: beliebig weit gerade oder diagonal.',
+      'Turm: beliebig weit gerade.',
+      'Läufer: beliebig weit diagonal.',
+      'Springer: zwei Felder gerade und eins zur Seite („L“), er darf über Figuren springen.',
+      'Bauer: ein Feld vor, aus der Grundstellung auch zwei. Geschlagen wird diagonal vorwärts.',
+    ],
+  },
+  {
+    titel: 'Besondere Züge',
+    liste: [
+      'Rochade: König zwei Felder zum Turm, der Turm springt auf die andere Seite. Nur wenn beide noch nie gezogen haben, nichts dazwischen steht und der König nicht im Schach steht oder durch Schach zieht.',
+      'En passant: Zieht ein Bauer zwei Felder und steht dann neben deinem Bauern, darfst du ihn im nächsten Zug im Vorbeigehen schlagen.',
+      'Umwandlung: Ein Bauer auf der letzten Reihe wird zu Dame, Turm, Läufer oder Springer.',
+    ],
+  },
+  {
+    titel: 'Unentschieden (Remis)',
+    liste: [
+      'Patt: Wer am Zug ist, hat keinen erlaubten Zug, steht aber nicht im Schach.',
+      'Zu wenig Material für ein Matt, dreifache Stellungswiederholung oder 50 Züge ohne Bauernzug oder Schlagen.',
+      'Beide einigen sich auf Remis („Remis“ im Menü), oder jemand gibt auf („Aufgeben“).',
+    ],
+  },
+];

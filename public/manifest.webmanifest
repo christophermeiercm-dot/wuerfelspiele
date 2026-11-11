@@ -1,7 +1,7 @@
 {
-  "name": "Würfelspiele",
-  "short_name": "Würfel",
-  "description": "Punkteblock für Würfelspiele – auch ohne Netz",
+  "name": "Spielekiste",
+  "short_name": "Spiele",
+  "description": "Würfelspiele, Schocken und Schach – auch ohne Netz",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
