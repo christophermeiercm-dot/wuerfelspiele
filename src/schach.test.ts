@@ -1,50 +1,79 @@
-import { Chess } from 'chess.js';
 import { describe, expect, it } from 'vitest';
-import { geschlagen, lage, leerer, spielAus } from './schach';
+import { aktuell, geschlagen, lage, leerer, type Stand } from './schach';
+import { START, amZug, brettAus, koenigGeschlagen, ziehe, ziele, type Typ } from './schachFrei';
 
-const partie = (...zuege: string[]) => spielAus({ ...leerer(), zuege });
+/** Spielt Züge als [von, nach, promotion?] ab und baut den Stand wie die Oberfläche. */
+const spiele = (zuege: [string, string, Typ?][], fen = START): Stand => {
+  const s: Stand = { ...leerer(), fens: [fen] };
+  for (const [von, nach, promo] of zuege) {
+    const g = ziehe(aktuell(s), von, nach, promo);
+    s.fens.push(g.fen);
+    s.zuege.push({ label: g.label, von, nach, schlag: g.schlag });
+  }
+  return s;
+};
+const nachZiele = (fen: string, von: string) => ziele(fen, von).map(z => z.nach).sort();
 
-describe('Schach – Lage', () => {
-  it('Anfangsstellung: Weiß am Zug, nicht vorbei', () => {
-    expect(lage(new Chess(), null)).toMatchObject({ text: 'Weiß ist am Zug', vorbei: false, ausgang: null });
+describe('Schach ohne Hilfe – Bewegung', () => {
+  it('Anfangsstellung: Bauer zwei Felder, Springer zwei Züge, Weiß beginnt', () => {
+    expect(nachZiele(START, 'e2')).toEqual(['e3', 'e4']);
+    expect(nachZiele(START, 'g1')).toEqual(['f3', 'h3']);
+    expect(ziele(START, 'e7')).toEqual([]); // Schwarz ist nicht dran
+    expect(amZug(START)).toBe('w');
   });
 
-  it('Schäfermatt: Weiß gewinnt', () => {
-    const l = lage(partie('e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6', 'Qxf7#'), null);
-    expect(l).toMatchObject({ ausgang: 'weiss', vorbei: true });
-    expect(l.text).toContain('Schachmatt');
+  it('Zug wechselt die Seite und merkt sich geschlagene Figuren', () => {
+    const s = spiele([['e2', 'e4'], ['d7', 'd5'], ['e4', 'd5']]);
+    expect(amZug(aktuell(s))).toBe('b');
+    expect(s.zuege.map(z => z.label)).toEqual(['e2-e4', 'd7-d5', 'e4xd5']);
+    expect(geschlagen(s)).toEqual({ w: ['p'], b: [] });
   });
 
-  it('Narrenmatt: Schwarz gewinnt', () => {
-    expect(lage(partie('f3', 'e5', 'g4', 'Qh4#'), null).ausgang).toBe('schwarz');
+  it('en passant', () => {
+    const s = spiele([['e2', 'e4'], ['a7', 'a6'], ['e4', 'e5'], ['d7', 'd5']]);
+    expect(nachZiele(aktuell(s), 'e5')).toContain('d6');
+    const t = spiele([['e2', 'e4'], ['a7', 'a6'], ['e4', 'e5'], ['d7', 'd5'], ['e5', 'd6']]);
+    expect(brettAus(aktuell(t)).flat().filter(f => f?.type === 'p' && f.color === 'b').length).toBe(7);
   });
 
-  it('Schach wird gemeldet, Spiel läuft weiter', () => {
-    const l = lage(partie('e4', 'f6', 'Qh5+'), null);
-    expect(l).toMatchObject({ schach: true, vorbei: false });
-    expect(l.text).toContain('Schach!');
+  it('Rochade klappt, wenn frei', () => {
+    const s = spiele([['g1', 'f3'], ['a7', 'a6'], ['e2', 'e4'], ['a6', 'a5'], ['f1', 'c4'], ['a5', 'a4']]);
+    expect(nachZiele(aktuell(s), 'e1')).toContain('g1');
+    const t = spiele([['e1', 'g1']], aktuell(s));
+    expect(t.zuege[0].label).toBe('O-O');
+    expect(brettAus(aktuell(t)).flat().find(f => f?.type === 'r' && f.color === 'w' && f.square === 'f1')).toBeTruthy();
   });
 
-  it('Aufgabe und Remis-Einigung beenden von Hand', () => {
-    const b = { ausgang: 'schwarz' as const, grund: 'Weiß gibt auf – Schwarz gewinnt' };
-    expect(lage(new Chess(), b)).toMatchObject({ vorbei: true, ausgang: 'schwarz' });
-  });
-
-  it('Patt ist Remis', () => {
-    const c = new Chess('7k/5Q2/6K1/8/8/8/8/8 b - - 0 1');
-    expect(lage(c, null)).toMatchObject({ ausgang: 'remis', vorbei: true });
+  it('Umwandlung wählt die Figur', () => {
+    const fen = '1n2k3/P7/8/8/8/8/8/4K3 w - - 0 1';
+    expect(ziele(fen, 'a7').find(z => z.nach === 'a8')?.umwandlung).toBe(true);
+    const s = spiele([['a7', 'a8', 'n']], fen);
+    expect(brettAus(aktuell(s))[0][0]).toMatchObject({ type: 'n', color: 'w' });
+    expect(s.zuege[0].label).toBe('a7-a8=S');
   });
 });
 
-describe('Schach – Nachspielen und Schlagen', () => {
-  it('Stand lässt sich aus der Zugliste wiederherstellen', () => {
-    const c = partie('e4', 'e5', 'Nf3');
-    expect(c.history()).toEqual(['e4', 'e5', 'Nf3']);
+describe('Schach ohne Hilfe – keine Schachregeln', () => {
+  it('Figur im Schach darf wegziehen, auch gefesselte und der König auf ein bedrohtes Feld', () => {
+    // Schwarzer Turm e8 fesselt den weißen Läufer e2 am König e1, der weiße König steht im Schach.
+    const fen = '4r2k/8/8/8/8/8/4B3/4K3 w - - 0 1';
+    expect(nachZiele(fen, 'e2')).toContain('d3'); // gefesselt, nach echten Regeln verboten
+    expect(nachZiele(fen, 'e1')).toContain('d1');
+    expect(nachZiele(fen, 'e1')).toContain('f1');
+    expect(lage({ ...leerer(), fens: [fen] }, 'w').text).toBe('Weiß ist am Zug'); // keine Schach-Warnung
   });
 
-  it('geschlagene Figuren je Seite, nach Wert sortiert', () => {
-    const g = geschlagen(partie('e4', 'd5', 'exd5', 'Qxd5', 'Nc3', 'Qxg2'));
-    expect(g.w).toEqual(['p']);
-    expect(g.b).toEqual(['p', 'p']);
+  it('wer den König nicht rettet, verliert ihn', () => {
+    const fen = '4k3/8/8/8/8/8/P7/R3K2r w - - 0 1'; // Turm h1 bedroht Ke1 über f1,g1 (frei), Weiß zieht a2-a3
+    const s = spiele([['a2', 'a3'], ['h1', 'e1']], fen); // Schwarz schlägt den König
+    expect(koenigGeschlagen(aktuell(s))).toBe('w');
+    expect(lage(s, amZug(aktuell(s)))).toMatchObject({ ausgang: 'schwarz', vorbei: true });
+    expect(lage(s, 'w').text).toContain('König geschlagen');
+    expect(ziele(aktuell(s), 'a1')).toEqual([]); // nach dem Ende kein Zug mehr
+  });
+
+  it('Aufgabe beendet von Hand', () => {
+    const s: Stand = { ...leerer(), beendet: { ausgang: 'weiss', grund: 'Schwarz gibt auf – Weiß gewinnt' } };
+    expect(lage(s, 'w')).toMatchObject({ vorbei: true, ausgang: 'weiss' });
   });
 });

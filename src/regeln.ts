@@ -125,13 +125,14 @@ export const REGELN_SCHACH: RegelAbschnitt[] = [
       'Eigene Figur antippen: Die erlaubten Felder werden markiert. Dann das Zielfeld antippen.',
       'Anderen Zug überlegt? Eine andere eigene Figur antippen oder dieselbe nochmal.',
       'Bauer auf der letzten Reihe: Die App fragt, in welche Figur er sich verwandelt.',
-      'Die App kennt alle Regeln und lässt nur erlaubte Züge zu, auch Rochade und „en passant“.',
+      'Die App kennt die Bewegungen aller Figuren, auch Rochade und „en passant“. Sie warnt aber nicht vor Schach und zwingt dich zu nichts.',
+      'Du darfst auch ziehen, wenn dein König bedroht ist. Passt du nicht auf, schlägt der Gegner ihn – dann ist die Partie verloren.',
       '↶ nimmt den letzten Zug zurück, ⇅ dreht das Brett für den Gegenüber.',
     ],
   },
   {
     titel: 'Ziel',
-    absaetze: ['Du setzt den gegnerischen König matt: Er steht im Schach und kann ihm nicht mehr entkommen. Weiß beginnt, dann ziehen beide abwechselnd.'],
+    absaetze: ['Du schlägst den gegnerischen König. Wie am echten Brett sagt dir niemand „Schach!“, du musst selbst aufpassen. Weiß beginnt, dann ziehen beide abwechselnd.'],
   },
   {
     titel: 'Wie die Figuren ziehen',
@@ -147,17 +148,17 @@ export const REGELN_SCHACH: RegelAbschnitt[] = [
   {
     titel: 'Besondere Züge',
     liste: [
-      'Rochade: König zwei Felder zum Turm, der Turm springt auf die andere Seite. Nur wenn beide noch nie gezogen haben, nichts dazwischen steht und der König nicht im Schach steht oder durch Schach zieht.',
+      'Rochade: König zwei Felder zum Turm, der Turm springt auf die andere Seite. Nur wenn beide noch nie gezogen haben, nichts dazwischen steht und der König nicht im Schach steht oder durch ein bedrohtes Feld zieht.',
       'En passant: Zieht ein Bauer zwei Felder und steht dann neben deinem Bauern, darfst du ihn im nächsten Zug im Vorbeigehen schlagen.',
       'Umwandlung: Ein Bauer auf der letzten Reihe wird zu Dame, Turm, Läufer oder Springer.',
     ],
   },
   {
-    titel: 'Unentschieden (Remis)',
+    titel: 'Ende der Partie',
     liste: [
-      'Patt: Wer am Zug ist, hat keinen erlaubten Zug, steht aber nicht im Schach.',
-      'Zu wenig Material für ein Matt, dreifache Stellungswiederholung oder 50 Züge ohne Bauernzug oder Schlagen.',
+      'Die Partie endet, wenn ein König geschlagen wird. Die App meldet das.',
       'Beide einigen sich auf Remis („Remis“ im Menü), oder jemand gibt auf („Aufgeben“).',
+      'Schachmatt, Patt und die Remis-Regeln (50 Züge, Stellungswiederholung) kennt die App nicht, das entscheidet ihr am Tisch.',
     ],
   },
 ];

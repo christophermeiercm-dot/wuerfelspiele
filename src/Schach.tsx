@@ -1,11 +1,13 @@
-import type { Square } from 'chess.js';
 import { useEffect, useMemo, useState } from 'react';
 import { RegelnKnopf } from './RegelnKnopf';
 import { REGELN_SCHACH } from './regeln';
-import { FIGUR_NAME, SYMBOL, geschlagen, laden, lage, leerer, speichern, spielAus, type Stand } from './schach';
+import { FIGUR_NAME, SYMBOL, aktuell, geschlagen, laden, lage, leerer, speichern, type Stand } from './schach';
+import { amZug, brettAus, figurAuf, ziehe as fuehreAus, ziele as zieleVon, type Typ } from './schachFrei';
+
+type Square = string;
 
 const SPALTEN = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-const UMWANDLUNG = ['q', 'r', 'b', 'n'];
+const UMWANDLUNG: Typ[] = ['q', 'r', 'b', 'n'];
 
 export function SchachSeite({ zurueck }: { zurueck: () => void }) {
   const [stand, setStand] = useState<Stand>(() => laden() ?? leerer());
@@ -14,34 +16,35 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
   const [umwandlung, setUmwandlung] = useState<{ von: Square; nach: Square } | null>(null);
   const [menue, setMenue] = useState(false);
 
-  const c = useMemo(() => spielAus(stand), [stand]);
-  const l = lage(c, stand.beendet);
-  const brett = c.board();
-  const letzter = c.history({ verbose: true }).at(-1);
-  const ziele = useMemo(
-    () => (gewaehlt && !l.vorbei ? c.moves({ square: gewaehlt, verbose: true }) : []),
-    [c, gewaehlt, l.vorbei],
-  );
-  const kg = geschlagen(c);
+  const fen = aktuell(stand);
+  const turn = amZug(fen);
+  const l = lage(stand, turn);
+  const brett = useMemo(() => brettAus(fen), [fen]);
+  const letzter = stand.zuege.at(-1);
+  const ziele = useMemo(() => (gewaehlt && !l.vorbei ? zieleVon(fen, gewaehlt) : []), [fen, gewaehlt, l.vorbei]);
+  const kg = geschlagen(stand);
 
-  const ziehe = (von: Square, nach: Square, promotion?: string) => {
-    const kopie = spielAus(stand);
-    const m = kopie.move({ from: von, to: nach, promotion });
-    setStand({ ...stand, zuege: [...stand.zuege, m.san] });
+  const ziehe = (von: Square, nach: Square, promotion?: Typ) => {
+    const g = fuehreAus(fen, von, nach, promotion);
+    setStand({
+      ...stand,
+      fens: [...stand.fens, g.fen],
+      zuege: [...stand.zuege, { label: g.label, von, nach, schlag: g.schlag }],
+    });
     setGewaehlt(null);
     setUmwandlung(null);
   };
 
   const tippe = (feld: Square) => {
     if (l.vorbei) return;
-    const ziel = ziele.find(m => m.to === feld);
+    const ziel = ziele.find(m => m.nach === feld);
     if (gewaehlt && ziel) {
-      if (ziel.promotion) setUmwandlung({ von: gewaehlt, nach: feld });
+      if (ziel.umwandlung) setUmwandlung({ von: gewaehlt, nach: feld });
       else ziehe(gewaehlt, feld);
       return;
     }
-    const figur = c.get(feld);
-    setGewaehlt(figur && figur.color === c.turn() && feld !== gewaehlt ? feld : null);
+    const figur = figurAuf(fen, feld);
+    setGewaehlt(figur && figur.color === turn && feld !== gewaehlt ? feld : null);
   };
 
   const beenden = (ausgang: 'weiss' | 'schwarz' | 'remis', grund: string) => {
@@ -56,8 +59,7 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
     const re = stand.gedreht ? zeile + 1 : 8 - zeile;
     return `${SPALTEN[sp]}${re}` as Square;
   };
-  const koenigImSchach = l.schach ? c.board().flat().find(p => p?.type === 'k' && p.color === c.turn())?.square : undefined;
-
+  
   return (
     <main className="seite">
       <div className="leiste">
@@ -66,13 +68,13 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
         <span className="platz" />
         <RegelnKnopf titel="Schach" abschnitte={REGELN_SCHACH} symbol />
         <button className="icon" disabled={!stand.zuege.length} aria-label="Zug zurück"
-          onClick={() => { setStand({ ...stand, zuege: stand.zuege.slice(0, -1), beendet: null }); setGewaehlt(null); }}>↶</button>
+          onClick={() => { setStand({ ...stand, fens: stand.fens.slice(0, -1), zuege: stand.zuege.slice(0, -1), beendet: null }); setGewaehlt(null); }}>↶</button>
         <button className="icon" aria-label="Brett drehen" onClick={() => setStand({ ...stand, gedreht: !stand.gedreht })}>⇅</button>
         <button className="icon" aria-label="Menü" onClick={() => setMenue(true)}>⋯</button>
       </div>
 
       <section className={'karte dran schach-status' + (l.vorbei ? ' vorbei' : '')}>
-        <span className={'seitenpunkt ' + (c.turn() === 'w' ? 'weiss' : 'schwarz')} aria-hidden />
+        <span className={'seitenpunkt ' + (turn === 'w' ? 'weiss' : 'schwarz')} aria-hidden />
         <strong>{l.text}</strong>
       </section>
 
@@ -81,16 +83,15 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
         {reihen.map((reihe, z) => reihe.map((figur, s) => {
           const name = feldName(z, s);
           const dunkel = (SPALTEN.indexOf(name[0]) + Number(name[1])) % 2 === 0;
-          const ziel = ziele.find(m => m.to === name);
+          const ziel = ziele.find(m => m.nach === name);
           const klass = ['feld-s', dunkel ? 'dunkel' : 'hell'];
           if (name === gewaehlt) klass.push('gewaehlt');
-          if (letzter && (letzter.from === name || letzter.to === name)) klass.push('letzter');
-          if (name === koenigImSchach) klass.push('schach');
+          if (letzter && (letzter.von === name || letzter.nach === name)) klass.push('letzter');
           return (
             <button key={name} className={klass.join(' ')} onClick={() => tippe(name)}
               aria-label={`${name}${figur ? ' ' + (figur.color === 'w' ? 'weißer ' : 'schwarzer ') + FIGUR_NAME[figur.type] : ''}`}>
               {figur && <span className={'figur ' + (figur.color === 'w' ? 'w' : 's')}>{SYMBOL[figur.type]}</span>}
-              {ziel && <i className={'ziel' + (c.get(name) || ziel.flags.includes('e') ? ' schlag' : '')} />}
+              {ziel && <i className={'ziel' + (ziel.schlag ? ' schlag' : '')} />}
               {s === 0 && <small className="reihe">{name[1]}</small>}
               {z === 7 && <small className="spalte">{name[0]}</small>}
             </button>
@@ -104,7 +105,7 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
         {stand.zuege.length === 0 ? <p className="neben">Noch kein Zug. Weiß beginnt.</p> : (
           <ol className="zugliste">
             {Array.from({ length: Math.ceil(stand.zuege.length / 2) }, (_, i) => (
-              <li key={i}><span>{i + 1}.</span><b>{stand.zuege[2 * i]}</b><b>{stand.zuege[2 * i + 1] ?? ''}</b></li>
+              <li key={i}><span>{i + 1}.</span><b>{stand.zuege[2 * i].label}</b><b>{stand.zuege[2 * i + 1]?.label ?? ''}</b></li>
             ))}
           </ol>
         )}
@@ -119,7 +120,7 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
             <div className="werte umw">
               {UMWANDLUNG.map(p => (
                 <button key={p} className="knopf zweit" onClick={() => ziehe(umwandlung.von, umwandlung.nach, p)}>
-                  <span className={'figur ' + (c.turn() === 'w' ? 'w' : 's') + ' gross'}>{SYMBOL[p]}</span><small>{FIGUR_NAME[p]}</small>
+                  <span className={'figur ' + (turn === 'w' ? 'w' : 's') + ' gross'}>{SYMBOL[p]}</span><small>{FIGUR_NAME[p]}</small>
                 </button>
               ))}
             </div>
@@ -148,7 +149,7 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
   );
 }
 
-function Geschlagen({ von, liste }: { von: 'w' | 'b'; liste: string[] }) {
+function Geschlagen({ von, liste }: { von: 'w' | 'b'; liste: Typ[] }) {
   // `von` ist die Farbe, deren Brettseite hier steht; gezeigt werden die Figuren, die diese Seite geschlagen hat.
   return (
     <div className="geschlagen" aria-label={`Geschlagen von ${von === 'w' ? 'Weiß' : 'Schwarz'}`}>
