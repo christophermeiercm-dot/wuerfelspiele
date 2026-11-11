@@ -24,12 +24,16 @@ self.addEventListener('fetch', event => {
   if (!AKTIV || event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
-  event.respondWith(
-    caches.match(event.request, { ignoreSearch: true, ignoreVary: true }).then(treffer => {
-      if (treffer) return treffer;
-      return fetch(event.request).catch(() =>
-        event.request.mode === 'navigate' ? caches.match('./') : Response.error(),
-      );
-    }),
-  );
+  const ausDemSpeicher = () => caches.match(event.request, { ignoreSearch: true, ignoreVary: true });
+
+  if (event.request.mode === 'navigate') {
+    // Seite öffnen: mit Netz immer die neueste Version (höchstens 3 Sekunden warten), sonst aus dem Speicher.
+    event.respondWith(
+      Promise.race([fetch(event.request), new Promise((_, nein) => setTimeout(nein, 3000))])
+        .catch(() => caches.match('./', { ignoreSearch: true, ignoreVary: true }).then(t => t || Response.error())),
+    );
+    return;
+  }
+  // Dateien mit Hash im Namen ändern sich nie: erst im Speicher nachsehen, dann Netz.
+  event.respondWith(ausDemSpeicher().then(t => t || fetch(event.request).catch(() => Response.error())));
 });
