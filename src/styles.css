@@ -131,3 +131,21 @@ td button { width: 100%; min-width: 2.6rem; min-height: 2.2rem; border: 0; backg
 .fe.gesperrt .wert { font-size: .75rem; font-weight: 600; color: var(--grau); }
 .haken { display: flex; gap: .6rem; align-items: center; font-size: .9rem; }
 .haken input { width: auto; }
+
+/* --- Schocken --- */
+.schock-phase .wer strong { font-size: 1.35rem; }
+.mitte-vorrat { display: grid; justify-items: center; gap: .3rem; }
+.vorrat { font-size: 3.4rem; font-weight: 800; line-height: 1; color: var(--blau); }
+.vorrat.klein { font-size: 2.6rem; }
+.deckelreihe { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; max-width: 15rem; }
+.deckelreihe i { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 2px dashed var(--nebel); }
+.deckelreihe i.da { border: 0; background: radial-gradient(circle at 35% 30%, #f9dc8c, var(--gold)); box-shadow: 0 2px 4px rgba(15,46,87,.25); }
+.spieler2 { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.sp { display: grid; justify-items: center; gap: .25rem; text-align: center; border-top: 5px solid var(--farbe); }
+.sp .avatar { width: 2.4rem; height: 2.4rem; font-size: 1rem; box-shadow: none; }
+.sp.verlierer { background: #fdecea; }
+.knopf.klein { padding: .6rem .7rem; font-size: .9rem; margin-top: .4rem; }
+.wert-knopf { display: grid; gap: .1rem; padding: .6rem .3rem; }
+.wert-knopf strong { font-size: 1.5rem; }
+.wert-knopf small { font-size: .65rem; color: var(--grau); font-weight: 600; }
+.mitte + .neben + .knopf.haupt, .neben.mitte + .knopf.haupt { margin-top: .9rem; }

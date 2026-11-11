@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { VARIANTEN, type Variante } from './kniffel';
-import { REGELN } from './regeln';
+import type { RegelAbschnitt } from './regeln';
 
 /** Knopf, der die Spielregeln als Blatt öffnet. `symbol`: nur „?“ (Kopfzeile) statt Text. */
-export function RegelnKnopf({ variante, symbol = false }: { variante: Variante; symbol?: boolean }) {
+export function RegelnKnopf({ titel, abschnitte, symbol = false }: { titel: string; abschnitte: RegelAbschnitt[]; symbol?: boolean }) {
   const [offen, setOffen] = useState(false);
   return (
     <>
       {symbol ? (
-        <button className="icon" onClick={() => setOffen(true)} aria-label={`Spielregeln ${VARIANTEN[variante].titel}`}>?</button>
+        <button className="icon" onClick={() => setOffen(true)} aria-label={`Spielregeln ${titel}`}>?</button>
       ) : (
         <button className="knopf zweit" onClick={() => setOffen(true)}>📖 Spielregeln lesen</button>
       )}
@@ -16,11 +15,11 @@ export function RegelnKnopf({ variante, symbol = false }: { variante: Variante; 
         <div className="schleier" onClick={() => setOffen(false)}>
           <div className="blatt lang" role="dialog" aria-modal onClick={e => e.stopPropagation()}>
             <div className="blattkopf">
-              <h2>Spielregeln · {VARIANTEN[variante].titel}</h2>
+              <h2>Spielregeln · {titel}</h2>
               <button className="icon" onClick={() => setOffen(false)} aria-label="Schließen">✕</button>
             </div>
             <div className="regeltext">
-              {REGELN[variante].map(a => (
+              {abschnitte.map(a => (
                 <section key={a.titel}>
                   <h3>{a.titel}</h3>
                   {a.absaetze?.map((t, i) => <p key={i}>{t}</p>)}

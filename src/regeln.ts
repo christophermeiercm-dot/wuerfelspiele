@@ -70,3 +70,50 @@ const YAHTZEE: RegelAbschnitt[] = [
 ];
 
 export const REGELN: Record<Variante, RegelAbschnitt[]> = { kniffel: KNIFFEL, yahtzee: YAHTZEE };
+
+export const REGELN_SCHOCKEN: RegelAbschnitt[] = [
+  {
+    titel: 'Ziel',
+    absaetze: [
+      'Schocken wird mit drei Würfeln gespielt. Wer eine Runde verliert, bekommt Deckel (Untersetzer). Wer alle 13 Deckel hat, hat eine Hälfte verloren. Gespielt werden zwei Hälften.',
+      'Die App würfelt nicht und wertet keine Würfe. Sie zählt nur die Deckel. Wer die Runde gewonnen hat, klärt ihr am Tisch.',
+    ],
+  },
+  {
+    titel: 'Eine Runde am Tisch',
+    liste: [
+      'Jeder würfelt mit drei Würfeln bis zu dreimal und legt Würfel zur Seite. Wer anfängt, bestimmt, wie oft maximal gewürfelt wird.',
+      'Wer die schlechtere Hand hat, verliert die Runde und bekommt Deckel.',
+      'In der App: „… hat verloren“ antippen und die Deckelzahl wählen.',
+    ],
+  },
+  {
+    titel: 'Wie viele Deckel?',
+    liste: [
+      'Einfache Zahl (z. B. 6-4-2): 1 Deckel.',
+      'Straße (z. B. 4-5-6): 2 Deckel.',
+      'Pasch (drei gleiche, z. B. 5-5-5, auch „Jennie“): 3 Deckel.',
+      'Schock (zwei Einsen und eine weitere Zahl, 1-1-3 bis 1-1-6): so viele Deckel, wie die dritte Zahl zeigt.',
+      'Schock Doof (1-1-2): meist 2 Deckel. Hier unterscheiden sich die Hausregeln, auch bei der Rangfolge.',
+      'Schock Out (1-1-1): Die Hälfte ist sofort vorbei, der Verlierer der Runde bekommt alle 13 Deckel.',
+      'Die Deckelzahl wählst du in der App selbst. So passt sie zu euren Hausregeln.',
+    ],
+  },
+  {
+    titel: 'Die zwei Hälften',
+    liste: [
+      '13 Deckel liegen zu Beginn in der Mitte. Der Verlierer einer Runde nimmt die Deckel von dort.',
+      'Ist die Mitte leer, holt sich der Verlierer die Deckel vom anderen Spieler.',
+      'Es wird immer nur so viel genommen, wie noch da ist (z. B. bei 1 Deckel in der Mitte nur 1).',
+      'Hat jemand alle 13 Deckel, hat er die Hälfte verloren. Dann liegen wieder alle 13 in der Mitte und die zweite Hälfte beginnt.',
+    ],
+  },
+  {
+    titel: 'Spielende und Finale',
+    liste: [
+      'Wer beide Hälften verliert, hat das Spiel verloren.',
+      'Hat jeder eine Hälfte verloren, gibt es ein Finale: eine einzige Runde, wer sie verliert, verliert das Spiel. (Gängige Variante, manche Runden spielen das Finale anders.)',
+      'Traditionell zahlt der Verlierer die nächste Runde.',
+    ],
+  },
+];

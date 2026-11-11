@@ -5,6 +5,7 @@ import {
 } from './kniffel';
 import { Wuerfel, SPIELERFARBEN } from './Wuerfel';
 import { RegelnKnopf } from './RegelnKnopf';
+import { REGELN } from './regeln';
 import { eintragen, laden, neuesSpiel, rangliste, rueckgaengig, speichern, spielZuEnde, type Spiel } from './spiel';
 
 
@@ -20,7 +21,7 @@ function Einrichtung({ variante, zurueck, start }: { variante: Variante; zurueck
   const [namen, setNamen] = useState(['', '']);
   return (
     <main className="seite">
-      <Leiste titel={VARIANTEN[variante].titel} zurueck={zurueck}><RegelnKnopf variante={variante} symbol /></Leiste>
+      <Leiste titel={VARIANTEN[variante].titel} zurueck={zurueck}><RegelnKnopf titel={VARIANTEN[variante].titel} abschnitte={REGELN[variante]} symbol /></Leiste>
       <section className="karte">
         <h2>Wer spielt mit?</h2>
         {namen.map((n, i) => (
@@ -35,7 +36,7 @@ function Einrichtung({ variante, zurueck, start }: { variante: Variante; zurueck
           {namen.length > 1 && <button className="knopf zweit" onClick={() => setNamen(namen.slice(0, -1))}>− Letzter</button>}
         </div>
         <button className="knopf haupt" onClick={() => start(namen)}>Spiel starten →</button>
-        <div className="zeile"><RegelnKnopf variante={variante} /></div>
+        <div className="zeile"><RegelnKnopf titel={VARIANTEN[variante].titel} abschnitte={REGELN[variante]} /></div>
       </section>
     </main>
   );
@@ -64,7 +65,7 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
   return (
     <main className="seite">
       <Leiste titel={VARIANTEN[variante].titel} zurueck={zurueck}>
-        <RegelnKnopf variante={variante} symbol />
+        <RegelnKnopf titel={VARIANTEN[variante].titel} abschnitte={REGELN[variante]} symbol />
         <button className="icon" disabled={!spiel.verlauf.length} onClick={() => { setWurf([]); setSpiel(rueckgaengig(spiel)); }}
           aria-label="Letzten Eintrag rückgängig">↶</button>
         <button className="icon" aria-label="Neues Spiel"
