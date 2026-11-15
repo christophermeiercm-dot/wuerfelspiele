@@ -70,7 +70,7 @@ export function SchockenSeite({ zurueck }: { zurueck: () => void }) {
           <b>{n[0]} {z.verloren[0]} : {z.verloren[1]} {n[1]}</b></span>
       </section>
 
-      {!ende && z.phase !== 'finale' && (
+      {!ende && (
         <section className="karte mitte-vorrat">
           <small className="neben">In der Mitte</small>
           <div className="vorrat">{z.vorrat}</div>
@@ -83,11 +83,11 @@ export function SchockenSeite({ zurueck }: { zurueck: () => void }) {
           <section key={i} className={'karte sp' + (ende && z.verlierer === i ? ' verlierer' : '')} style={{ ['--farbe' as string]: SPIELERFARBEN[i] }}>
             <span className="avatar">{n[i].slice(0, 1).toUpperCase()}</span>
             <strong>{n[i]}</strong>
-            <div className="vorrat klein">{z.phase === 'finale' ? '–' : z.deckel[i]}</div>
+            <div className="vorrat klein">{z.deckel[i]}</div>
             <small className="neben">Deckel</small>
             {!ende && (
-              <button className="knopf haupt klein" onClick={() => (z.phase === 'finale' ? setze(i, 0) : setWahl(i))}>
-                {z.phase === 'finale' ? 'Finale verloren' : 'Hat verloren'}
+              <button className="knopf haupt klein" onClick={() => setWahl(i)}>
+                Hat verloren
               </button>
             )}
           </section>

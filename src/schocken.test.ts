@@ -41,12 +41,26 @@ describe('Schocken – Ende', () => {
     expect(s.z).toMatchObject({ phase: 'ende', verlierer: 0 });
   });
 
-  it('je eine Hälfte verloren = Finale, wer es verliert, verliert das Spiel', () => {
+  it('je eine Hälfte verloren = Finale mit 13 frischen Deckeln', () => {
+    const s = haelfteVerlieren(haelfteVerlieren(spiel(), 0), 1);
+    expect(s.z).toMatchObject({ phase: 'finale', vorrat: 13, deckel: [0, 0], verloren: [1, 1] });
+  });
+
+  it('Finale ist eine ganze Hälfte: Deckel zählen, bei 13 hat der Spieler das Spiel verloren', () => {
     let s = haelfteVerlieren(haelfteVerlieren(spiel(), 0), 1);
-    expect(s.z.phase).toBe('finale');
-    s = verlieren(s, 1, 1);
+    s = verlieren(s, 1, 6);
+    s = verlieren(s, 0, 6);
+    expect(s.z).toMatchObject({ phase: 'finale', vorrat: 1, deckel: [6, 6] }); // noch nicht entschieden
+    s = verlieren(s, 1, 6); // nimmt nur 1 aus der Mitte -> 7
+    s = verlieren(s, 1, 6); // Mitte leer: holt 6 von Anna -> 13
     expect(s.z).toMatchObject({ phase: 'ende', verlierer: 1 });
+    expect(s.z.meldung).toContain('Finale');
     expect(verlieren(s, 0, 1)).toBe(s); // nach dem Ende nichts mehr
+  });
+
+  it('Schock Out im Finale beendet das Spiel sofort', () => {
+    const s = verlieren(haelfteVerlieren(haelfteVerlieren(spiel(), 0), 1), 0, 1, true);
+    expect(s.z).toMatchObject({ phase: 'ende', verlierer: 0 });
   });
 
   it('Rückgängig stellt den Zustand davor her, auch über die Hälfte hinweg', () => {

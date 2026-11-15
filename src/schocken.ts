@@ -41,17 +41,13 @@ const andere = (s: Seite): Seite => (s === 0 ? 1 : 0);
 /**
  * Eine Runde ist entschieden: `wer` hat verloren und bekommt `anzahl` Deckel.
  * `schockOut` (1-1-1): Die Hälfte ist sofort verloren, `wer` bekommt alle 13.
- * Im Finale zählt nur, wer die Runde verliert – er verliert das Spiel.
+ * Das Finale (bei 1:1) ist eine dritte Hälfte mit 13 Deckeln: Wer sie verliert, verliert das Spiel.
  */
 export function verlieren(s: Schocken, wer: Seite, anzahl: number, schockOut = false): Schocken {
   const z = s.z;
   if (z.phase === 'ende') return s;
   const name = s.namen[wer];
   const neu = (n: Partial<Zustand>): Schocken => ({ ...s, z: { ...z, ...n }, verlauf: [...s.verlauf, z] });
-
-  if (z.phase === 'finale') {
-    return neu({ phase: 'ende', verlierer: wer, meldung: `${name} verliert das Finale und damit das Spiel.` });
-  }
 
   const deckel: [number, number] = [z.deckel[0], z.deckel[1]];
   let vorrat = z.vorrat;
@@ -77,6 +73,11 @@ export function verlieren(s: Schocken, wer: Seite, anzahl: number, schockOut = f
 
   if (deckel[wer] < DECKEL) return neu({ vorrat, deckel, meldung });
 
+  // Finale verloren = Spiel verloren
+  if (z.phase === 'finale') {
+    return neu({ ...anfang(z.verloren, 'ende'), vorrat: 0, deckel, verlierer: wer, meldung: `${meldung} ${name} verliert das Finale und damit das Spiel.` });
+  }
+
   // Hälfte verloren
   const verloren: [number, number] = [z.verloren[0], z.verloren[1]];
   verloren[wer] += 1;
@@ -87,7 +88,7 @@ export function verlieren(s: Schocken, wer: Seite, anzahl: number, schockOut = f
   if (verloren[wer] === 2) {
     return neu({ ...anfang(verloren, 'ende'), vorrat: 0, deckel, verlierer: wer, meldung: `${halbText} Beide Hälften verloren – ${name} verliert das Spiel.` });
   }
-  return neu({ ...anfang(verloren, 'finale'), meldung: `${halbText} Jetzt gibt es das Finale.` });
+  return neu({ ...anfang(verloren, 'finale'), meldung: `${halbText} Jetzt gibt es das Finale, eine dritte Hälfte.` });
 }
 
 export function rueckgaengig(s: Schocken): Schocken {

@@ -112,7 +112,7 @@ export const REGELN_SCHOCKEN: RegelAbschnitt[] = [
     titel: 'Spielende und Finale',
     liste: [
       'Wer beide Hälften verliert, hat das Spiel verloren.',
-      'Hat jeder eine Hälfte verloren, gibt es ein Finale: eine einzige Runde, wer sie verliert, verliert das Spiel. (Gängige Variante, manche Runden spielen das Finale anders.)',
+      'Hat jeder eine Hälfte verloren (1:1), gibt es das Finale: eine dritte Hälfte mit wieder 13 Deckeln in der Mitte. Wer sie verliert, verliert das Spiel.',
       'Traditionell zahlt der Verlierer die nächste Runde.',
     ],
   },
