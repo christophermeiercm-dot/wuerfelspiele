@@ -3,6 +3,8 @@ import { RegelnKnopf } from './RegelnKnopf';
 import { REGELN_SCHOCKEN } from './regeln';
 import { DECKEL, laden, neuesSchocken, rueckgaengig, speichern, verlieren, type Schocken as Spiel, type Seite } from './schocken';
 import { SPIELERFARBEN } from './Wuerfel';
+import { entferneErgebnis, speichereErgebnis } from './rangliste';
+import { NamenListe } from './Rangliste';
 
 const WERTE: { n: number; text: string }[] = [
   { n: 1, text: 'Zahl' },
@@ -20,6 +22,11 @@ export function SchockenSeite({ zurueck }: { zurueck: () => void }) {
   useEffect(() => speichern(spiel), [spiel]);
   const [namen, setNamen] = useState(['', '']);
   const [wahl, setWahl] = useState<Seite | null>(null);
+  useEffect(() => {
+    if (spiel && spiel.z.phase === 'ende' && spiel.z.verlierer !== null) {
+      speichereErgebnis({ id: spiel.id, spiel: 'schocken', spieler: [...spiel.namen], sieger: [spiel.namen[spiel.z.verlierer === 0 ? 1 : 0]] });
+    } else if (spiel) entferneErgebnis(spiel.id);
+  }, [spiel]);
 
   const kopf = (extra?: React.ReactNode) => (
     <div className="leiste">
@@ -37,9 +44,10 @@ export function SchockenSeite({ zurueck }: { zurueck: () => void }) {
         {kopf()}
         <section className="karte">
           <h2>Wer spielt?</h2>
+          <NamenListe />
           {[0, 1].map(i => (
             <label key={i} className="feld">Spieler {i + 1}
-              <input value={namen[i]} placeholder={`Spieler ${i + 1}`} maxLength={16}
+              <input value={namen[i]} placeholder={`Spieler ${i + 1}`} maxLength={16} list="bekannte-namen"
                 onChange={e => setNamen(namen.map((x, k) => (k === i ? e.target.value : x)))} />
             </label>
           ))}

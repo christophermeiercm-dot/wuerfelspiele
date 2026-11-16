@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { neueId } from './rangliste';
 import { START, koenigGeschlagen, type Farbe, type Typ } from './schachFrei';
 
 /** Schach zu zweit an einem Gerät, ohne Schach-Warnung. Hier liegen Stand, Speichern und Anzeigehilfen. */
@@ -8,6 +9,10 @@ export type Ausgang = 'weiss' | 'schwarz' | 'remis';
 export interface ZugEintrag { label: string; von: string; nach: string; schlag: Typ | null }
 
 export interface Stand {
+  /** Kennung der Partie für die Rangliste. */
+  id: string;
+  /** Namen von Weiß und Schwarz; ohne Eingabe bleiben „Weiß“/„Schwarz“ stehen und die Partie kommt nicht in die Rangliste. */
+  namen: [string, string];
   /** Stellung vor dem ersten Zug und nach jedem Zug (Länge = Züge + 1). */
   fens: string[];
   zuege: ZugEintrag[];
@@ -16,7 +21,11 @@ export interface Stand {
   gedreht: boolean;
 }
 
-export const leerer = (): Stand => ({ fens: [START], zuege: [], beendet: null, gedreht: false });
+export const STANDARD_NAMEN: [string, string] = ['Weiß', 'Schwarz'];
+export const leerer = (): Stand => ({ id: neueId(), namen: [...STANDARD_NAMEN], fens: [START], zuege: [], beendet: null, gedreht: false });
+
+const lesNamen = (n: unknown): [string, string] =>
+  Array.isArray(n) && n.length === 2 && n.every(x => typeof x === 'string') ? [n[0], n[1]] : [...STANDARD_NAMEN];
 export const aktuell = (s: Stand): string => s.fens[s.fens.length - 1];
 
 export interface Lage { text: string; ausgang: Ausgang | null; vorbei: boolean }
@@ -71,11 +80,11 @@ export function laden(): Stand | null {
     const s = JSON.parse(roh);
     if (!Array.isArray(s.fens) && Array.isArray(s.zuege) && s.zuege.every((z: unknown) => typeof z === 'string')) {
       const alt = ausAltemStand(s.zuege);
-      return alt && { ...alt, beendet: s.beendet ?? null, gedreht: !!s.gedreht };
+      return alt && { ...alt, namen: lesNamen(s.namen), beendet: s.beendet ?? null, gedreht: !!s.gedreht };
     }
     const ok = Array.isArray(s.fens) && s.fens.length >= 1 && s.fens.every((f: unknown) => typeof f === 'string') &&
       Array.isArray(s.zuege) && s.zuege.length === s.fens.length - 1;
-    return ok ? { fens: s.fens, zuege: s.zuege, beendet: s.beendet ?? null, gedreht: !!s.gedreht } : null;
+    return ok ? { id: typeof s.id === 'string' ? s.id : neueId(), namen: lesNamen(s.namen), fens: s.fens, zuege: s.zuege, beendet: s.beendet ?? null, gedreht: !!s.gedreht } : null;
   } catch {
     return null;
   }

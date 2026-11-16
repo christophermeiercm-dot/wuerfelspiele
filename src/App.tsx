@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { VARIANTEN, type Variante } from './kniffel';
 import { REGELN, REGELN_SCHACH, REGELN_SCHOCKEN } from './regeln';
 import { RegelnKnopf } from './RegelnKnopf';
+import { RanglisteSeite } from './Rangliste';
+import { ladePartien } from './rangliste';
 import { SchachSeite } from './Schach';
 import { laden as ladeSchach } from './schach';
 import { SchockenSeite } from './Schocken';
@@ -20,14 +22,17 @@ const SPIELE: { id: SpielId; titel: string; untertitel: string; augen: number; g
 ];
 
 export function App() {
-  const [ansicht, setAnsicht] = useState<SpielId | 'start'>('start');
+  const [ansicht, setAnsicht] = useState<SpielId | 'rangliste' | 'start'>('start');
+  const [anzahlPartien, setAnzahlPartien] = useState(0);
   const [laeuft, setLaeuft] = useState<Record<SpielId, boolean>>({ kniffel: false, yahtzee: false, schocken: false, schach: false });
   useEffect(() => {
     if (ansicht === 'start') {
+      setAnzahlPartien(ladePartien().length);
       setLaeuft({ kniffel: laden('kniffel') !== null, yahtzee: laden('yahtzee') !== null, schocken: ladeSchocken() !== null, schach: (ladeSchach()?.zuege.length ?? 0) > 0 });
     }
   }, [ansicht]);
 
+  if (ansicht === 'rangliste') return <RanglisteSeite zurueck={() => setAnsicht('start')} />;
   if (ansicht === 'schach') return <SchachSeite zurueck={() => setAnsicht('start')} />;
   if (ansicht === 'schocken') return <SchockenSeite zurueck={() => setAnsicht('start')} />;
   if (ansicht !== 'start') return <Spielblock key={ansicht} variante={ansicht} zurueck={() => setAnsicht('start')} />;
@@ -56,6 +61,16 @@ export function App() {
           <RegelnKnopf titel={sp.titel} abschnitte={sp.id === 'schocken' ? REGELN_SCHOCKEN : sp.id === 'schach' ? REGELN_SCHACH : REGELN[sp.id]} />
         </div>
       ))}
+      <div className="karte spielkarte">
+        <button className="spielwahl" onClick={() => setAnsicht('rangliste')}>
+          <span className="spielicon" aria-hidden><span className="schachicon">🏆</span></span>
+          <span>
+            <strong>Rangliste</strong>
+            <small>{anzahlPartien ? `${anzahlPartien} ${anzahlPartien === 1 ? 'Partie' : 'Partien'} gezählt` : 'Siege nach Namen, über alle Spiele'}</small>
+          </span>
+          <span className="pfeil" aria-hidden>→</span>
+        </button>
+      </div>
       <div className="karte hinweis">Würfel bringst du selbst mit – bei den Würfelspielen trägst du nur ein, was gefallen ist.</div>
     </main>
   );

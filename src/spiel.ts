@@ -1,7 +1,10 @@
 import { ALLE_FELDER, istFertig, summen, type Blatt, type Feld, type Variante } from './kniffel';
+import { neueId } from './rangliste';
 
 export interface Spieler { name: string; blatt: Blatt; /** Anzahl weiterer Yahtzee mit Prämie (je 100 Punkte). */ zusatz: number }
 export interface Spiel {
+  /** Kennung der Partie für die Rangliste. */
+  id: string;
   variante: Variante;
   spieler: Spieler[];
   /** Index des Spielers, der dran ist. */
@@ -11,6 +14,7 @@ export interface Spiel {
 }
 
 export const neuesSpiel = (namen: string[], variante: Variante = 'kniffel'): Spiel => ({
+  id: neueId(),
   variante,
   spieler: namen.map((n, i) => ({ name: n.trim() || `Spieler ${i + 1}`, blatt: {}, zusatz: 0 })),
   dran: 0,
@@ -81,6 +85,7 @@ export function laden(variante: Variante): Spiel | null {
         Object.keys(x.blatt).every(k => (ALLE_FELDER as string[]).includes(k)));
     if (!ok) return null;
     return {
+      id: typeof s.id === 'string' ? s.id : neueId(),
       variante,
       dran: s.dran,
       verlauf: Array.isArray(s.verlauf) ? s.verlauf : [],

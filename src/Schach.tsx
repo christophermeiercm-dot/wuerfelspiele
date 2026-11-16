@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RegelnKnopf } from './RegelnKnopf';
 import { REGELN_SCHACH } from './regeln';
-import { FIGUR_NAME, SYMBOL, aktuell, geschlagen, laden, lage, leerer, speichern, type Stand } from './schach';
+import { FIGUR_NAME, STANDARD_NAMEN, SYMBOL, aktuell, geschlagen, laden, lage, leerer, speichern, type Stand } from './schach';
+import { entferneErgebnis, normName, speichereErgebnis } from './rangliste';
+import { NamenListe } from './Rangliste';
 import { amZug, brettAus, figurAuf, ziehe as fuehreAus, ziele as zieleVon, type Typ } from './schachFrei';
 
 type Square = string;
@@ -23,6 +25,15 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
   const letzter = stand.zuege.at(-1);
   const ziele = useMemo(() => (gewaehlt && !l.vorbei ? zieleVon(fen, gewaehlt) : []), [fen, gewaehlt, l.vorbei]);
   const kg = geschlagen(stand);
+
+  // Rangliste: nur mit zwei eigenen, verschiedenen Namen.
+  const [nameW, nameS] = [normName(stand.namen[0]), normName(stand.namen[1])];
+  const benannt = !!nameW && !!nameS && nameW !== STANDARD_NAMEN[0] && nameS !== STANDARD_NAMEN[1] && nameW.toLocaleLowerCase('de') !== nameS.toLocaleLowerCase('de');
+  useEffect(() => {
+    if (l.vorbei && benannt) {
+      speichereErgebnis({ id: stand.id, spiel: 'schach', spieler: [nameW, nameS], sieger: l.ausgang === 'weiss' ? [nameW] : l.ausgang === 'schwarz' ? [nameS] : [] });
+    } else entferneErgebnis(stand.id);
+  }, [l.vorbei, l.ausgang, benannt, nameW, nameS, stand.id]);
 
   const ziehe = (von: Square, nach: Square, promotion?: Typ) => {
     const g = fuehreAus(fen, von, nach, promotion);
@@ -51,7 +62,7 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
     setStand({ ...stand, beendet: { ausgang, grund } });
     setMenue(false);
   };
-  const neu = () => { if (l.vorbei || confirm('Partie beenden und neu beginnen?')) { setStand({ ...leerer(), gedreht: stand.gedreht }); setGewaehlt(null); setMenue(false); } };
+  const neu = () => { if (l.vorbei || confirm('Partie beenden und neu beginnen?')) { setStand({ ...leerer(), gedreht: stand.gedreht, namen: stand.namen }); setGewaehlt(null); setMenue(false); } };
 
   const reihen = stand.gedreht ? [...brett].reverse().map(r => [...r].reverse()) : brett;
   const feldName = (zeile: number, spalte: number): Square => {
@@ -78,6 +89,18 @@ export function SchachSeite({ zurueck }: { zurueck: () => void }) {
         <strong>{l.text}</strong>
       </section>
 
+      {stand.zuege.length === 0 && !stand.beendet && (
+        <section className="karte namen">
+          <NamenListe />
+          {([0, 1] as const).map(i => (
+            <label key={i} className="feld">{i === 0 ? 'Weiß' : 'Schwarz'}
+              <input value={stand.namen[i] === STANDARD_NAMEN[i] ? '' : stand.namen[i]} placeholder={STANDARD_NAMEN[i]} maxLength={16} list="bekannte-namen"
+                onChange={e => setStand({ ...stand, namen: i === 0 ? [e.target.value || STANDARD_NAMEN[0], stand.namen[1]] : [stand.namen[0], e.target.value || STANDARD_NAMEN[1]] })} />
+            </label>
+          ))}
+          <p className="neben">Mit Namen kommt die Partie in die Rangliste.</p>
+        </section>
+      )}
       <Geschlagen von={stand.gedreht ? 'w' : 'b'} liste={stand.gedreht ? kg.w : kg.b} />
       <div className="brett" role="grid" aria-label="Schachbrett">
         {reihen.map((reihe, z) => reihe.map((figur, s) => {

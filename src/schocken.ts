@@ -1,3 +1,5 @@
+import { neueId } from './rangliste';
+
 /** Schocken zu zweit: nur der Deckelzähler, gewürfelt wird am Tisch. Reine Funktionen. */
 
 export const DECKEL = 13;
@@ -20,6 +22,8 @@ export interface Zustand {
 }
 
 export interface Schocken {
+  /** Kennung der Partie für die Rangliste. */
+  id: string;
   namen: [string, string];
   z: Zustand;
   /** Frühere Zustände für „Rückgängig“. */
@@ -31,6 +35,7 @@ const anfang = (verloren: [number, number] = [0, 0], phase: Phase = 'haelfte1', 
 });
 
 export const neuesSchocken = (a: string, b: string): Schocken => ({
+  id: neueId(),
   namen: [a.trim() || 'Spieler 1', b.trim() || 'Spieler 2'],
   z: anfang(),
   verlauf: [],
@@ -107,7 +112,7 @@ export function laden(): Schocken | null {
     const ok = Array.isArray(s.namen) && s.namen.length === 2 && s.z && zahl(s.z.vorrat) &&
       Array.isArray(s.z.deckel) && s.z.deckel.every(zahl) && Array.isArray(s.z.verloren) && s.z.verloren.every(zahl) &&
       ['haelfte1', 'haelfte2', 'finale', 'ende'].includes(s.z.phase);
-    return ok ? { ...s, verlauf: Array.isArray(s.verlauf) ? s.verlauf : [] } : null;
+    return ok ? { ...s, id: typeof s.id === 'string' ? s.id : neueId(), verlauf: Array.isArray(s.verlauf) ? s.verlauf : [] } : null;
   } catch {
     return null;
   }

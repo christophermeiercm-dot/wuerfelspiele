@@ -6,6 +6,8 @@ import {
 import { Wuerfel, SPIELERFARBEN } from './Wuerfel';
 import { RegelnKnopf } from './RegelnKnopf';
 import { REGELN } from './regeln';
+import { entferneErgebnis, speichereErgebnis } from './rangliste';
+import { NamenListe } from './Rangliste';
 import { eintragen, laden, neuesSpiel, rangliste, rueckgaengig, speichern, spielZuEnde, type Spiel } from './spiel';
 
 
@@ -24,10 +26,11 @@ function Einrichtung({ variante, zurueck, start }: { variante: Variante; zurueck
       <Leiste titel={VARIANTEN[variante].titel} zurueck={zurueck}><RegelnKnopf titel={VARIANTEN[variante].titel} abschnitte={REGELN[variante]} symbol /></Leiste>
       <section className="karte">
         <h2>Wer spielt mit?</h2>
+        <NamenListe />
         {namen.map((n, i) => (
           <label key={i} className="feld">
             Spieler {i + 1}
-            <input value={n} placeholder={`Spieler ${i + 1}`} maxLength={16}
+            <input value={n} placeholder={`Spieler ${i + 1}`} maxLength={16} list="bekannte-namen"
               onChange={e => setNamen(namen.map((x, k) => (k === i ? e.target.value : x)))} />
           </label>
         ))}
@@ -49,6 +52,14 @@ function Partie({ spiel, setSpiel, zurueck, neu }: {
   const [dialog, setDialog] = useState<{ spieler: number; feld: Feld } | null>(null);
   const aktuell = spiel.spieler[spiel.dran];
   const fertig = spielZuEnde(spiel);
+  useEffect(() => {
+    if (fertig && spiel.spieler.length >= 2) {
+      speichereErgebnis({
+        id: spiel.id, spiel: spiel.variante, spieler: spiel.spieler.map(s => s.name),
+        sieger: rangliste(spiel).filter(e => e.platz === 1).map(e => e.name),
+      });
+    } else entferneErgebnis(spiel.id);
+  }, [fertig, spiel]);
   const wurfKomplett = wurf.length === 5;
 
   const variante = spiel.variante;
